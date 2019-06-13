@@ -1,0 +1,41 @@
+---
+
+# [beats-7.x]
+# name=Elastic repository for 7.x packages
+# baseurl=https://artifacts.elastic.co/packages/7.x/yum
+# gpgcheck=1
+# gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+# enabled=1
+# autorefresh=1
+# type=rpm-md
+
+- hosts: elk
+  become: true
+  vars_files:
+  - vars.yml
+
+  tasks:
+  - name: Add YUM Elastic repository for 7.x packages
+    yum_repository:
+      name: elk
+      description: Elastic repository for 7.x packages
+      file: elk
+      baseurl: https://artifacts.elastic.co/packages/7.x/yum
+      gpgcheck: yes
+      gpgkey: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+# [dockerrepo]
+# name=Docker Repository
+# baseurl=https://yum.dockerproject.org/repo/main/centos/7/
+# enabled=1
+# gpgcheck=1
+# gpgkey=https://yum.dockerproject.org/gpg
+
+  - name: Add YUM Docker repository
+    yum_repository:
+      name: docker
+      description: Docker Repository
+      file: docker
+      baseurl: https://yum.dockerproject.org/repo/main/centos/7
+      gpgcheck: yes
+      gpgkey: https://yum.dockerproject.org/gpg

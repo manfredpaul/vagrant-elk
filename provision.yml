@@ -1,0 +1,10 @@
+---
+
+- import_playbook: yum.yml
+- import_playbook: java.yml
+- import_playbook: docker.yml
+- import_playbook: postgresql.yml
+- import_playbook: elasticsearch.yml
+- import_playbook: kibana.yml
+- import_playbook: logstash.yml
+- import_playbook: beats.yml

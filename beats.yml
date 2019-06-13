@@ -1,0 +1,63 @@
+---
+
+# [beats-7.x]
+# name=Elastic repository for 7.x packages
+# baseurl=https://artifacts.elastic.co/packages/7.x/yum
+# gpgcheck=1
+# gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+# enabled=1
+# autorefresh=1
+# type=rpm-md
+
+- hosts: elk
+  become: true
+  vars_files:
+  - vars.yml
+
+  tasks:
+  - name: Get the Beats
+    yum:
+      name: "{{ item }}-{{ elastic_version }}"
+      state: present
+    with_items:
+      - auditbeat
+      - filebeat
+      - heartbeat-elastic
+      - metricbeat
+      - packetbeat
+
+  - name: Make sure the Beats autostart, but are stopped until they are properly configured
+    systemd:
+      name: "{{ item }}"
+      enabled: yes
+      state: stopped
+    with_items:
+      - auditbeat
+      - filebeat
+      - heartbeat-elastic
+      - metricbeat
+      - packetbeat
+
+  - name: Make sure the Beats autostart, but are stopped until they are properly configured
+    template:
+      src: "templates/{{ item }}.yml"
+      dest: "/etc/{{ item }}/{{ item }}.yml"
+    with_items:
+      - auditbeat
+      - filebeat
+      - heartbeat
+      - metricbeat
+      - packetbeat
+
+  - name: Restart beats
+    systemd:
+      name: "{{ item }}"
+      enabled: yes
+      state: restarted
+    with_items:
+      - auditbeat
+      - filebeat
+      - heartbeat-elastic
+      - metricbeat
+      - packetbeat
+           

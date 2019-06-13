@@ -1,0 +1,64 @@
+---
+
+# [logstash-7.x]
+# name=Elastic repository for 7.x packages
+# baseurl=https://artifacts.elastic.co/packages/7.x/yum
+# gpgcheck=1
+# gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+# enabled=1
+# autorefresh=1
+# type=rpm-md
+
+- hosts: elk
+  become: true
+  vars_files:
+  - vars.yml
+
+  tasks:
+  - name: Install Logstash
+    yum:
+      name: "logstash-{{ elastic_version }}"
+      state: present
+
+  - name: Make sure Logstash autostarts, but is stopped until it is properly configured
+    systemd:
+      name: logstash
+      enabled: yes
+      state: stopped
+
+  - name: Add the Logstash configuration which activates monitoring
+    template:
+      src: templates/logstash/logstash.yml
+      dest: /etc/logstash/logstash.yml
+
+  - name: Add the Logstash input configuration for Beats
+    template:
+      src: templates/logstash/beats-input.conf
+      dest: /etc/logstash/conf.d/00-beats-input.conf
+
+  - name: Add the Logstash filter configuration for Syslog
+    template:
+      src: templates/logstash/syslog-filter.conf
+      dest: /etc/logstash/conf.d/10-syslog-filter.conf
+
+  - name: Add an empty Logstash filter configuration
+    template:
+      src: templates/logstash/empty-filter.conf
+      dest: /etc/logstash/conf.d/11-empty-filter.conf
+
+  - name: Add the Logstash output configuration to Elasticsearch
+    template:
+      src: templates/logstash/elasticsearch-output.conf
+      dest: /etc/logstash/conf.d/20-elasticsearch-output.conf
+
+  - name: Create the pattern directory
+    file:
+      path: /opt/logstash/patterns/
+      state: directory
+      recurse: yes
+
+  - name: Start Logstash
+    systemd:
+      name: logstash
+      enabled: yes
+      state: restarted

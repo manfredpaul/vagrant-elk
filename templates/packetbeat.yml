@@ -1,0 +1,51 @@
+###################### Packetbeat Configuration Example #######################
+
+#============================== Network device ================================
+
+packetbeat.interfaces.device: any
+
+#================================== Flows =====================================
+
+packetbeat.flows:
+  timeout: 30s
+  period: 10s
+
+#========================== Transaction protocols =============================
+
+packetbeat.protocols:
+- type: icmp
+- type: dns
+  ports: [53]
+  include_authorities: true
+  include_additionals: true
+- type: http
+  ports: [80, 5601]
+- type: redis
+  ports: [6379]
+- type: mongodb
+  ports: [27017]
+
+#================================ Processors ===================================
+
+processors:
+- add_docker_metadata: ~
+- add_host_metadata: ~
+
+#================================ Outputs ======================================
+
+#-------------------------- Elasticsearch output -------------------------------
+output.elasticsearch:
+  hosts: ["http://localhost:9200"]
+
+#============================== Kibana =====================================
+
+setup.kibana:
+  host: "localhost:5601"
+
+setup.dashboards.enabled: true
+
+#============================== Xpack Monitoring =====================================
+
+xpack.monitoring.enabled: true
+xpack.monitoring.elasticsearch:
+  hosts: ["localhost:9200"]

@@ -1,0 +1,34 @@
+---
+
+- hosts: elk
+  become: true
+  vars_files:
+  - vars.yml
+
+
+  pre_tasks:
+    - name: Install PostgreSQL 10 repository
+      yum:
+        name: https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+        state: present
+
+  roles:
+    - role: geerlingguy.postgresql
+      postgresql_enablerepo: "pgdg10"
+      postgresql_version: 10
+      postgresql_data_dir: /var/lib/pgsql/10/data
+      postgresql_bin_path: /usr/pgsql-10/bin
+      postgresql_config_path: /var/lib/pgsql/10/data
+      postgresql_daemon: postgresql-10.service
+      postgresql_packages:
+        - postgresql10
+        - postgresql10-server
+        - postgresql10-libs
+        - postgresql10-contrib
+        - postgresql10-devel
+      postgresql_databases:
+        - name: example_db
+      postgresql_users:
+        - name: example_user
+          password: supersecure
+          encrypted: true 

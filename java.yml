@@ -1,0 +1,11 @@
+---
+- hosts: elk
+  become: true
+  vars_files:
+  - vars.yml
+
+  tasks:
+  - name: Ensure Java is installed.
+    package:
+      name: java-1.8.0-openjdk
+      state: present

@@ -1,0 +1,103 @@
+---
+
+# [logstash-7.x]
+# name=Elastic repository for 7.x packages
+# baseurl=https://artifacts.elastic.co/packages/7.x/yum
+# gpgcheck=1
+# gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+# enabled=1
+# autorefresh=1
+# type=rpm-md
+
+- hosts: elk
+  become: true
+  vars_files:
+  - vars.yml
+
+  tasks:
+  - name: Install Elasticsearch
+    yum:
+      name: "elasticsearch-{{ elastic_version }}"
+      state: present
+
+  - name: Make sure Elasticsearch autostarts, but is stopped until it is properly configured
+    systemd:
+      name: elasticsearch
+      enabled: yes
+      state: stopped
+
+  - name: Change Elasticsearch's memory usage (Xms) to 512MB
+    lineinfile:
+      dest: /etc/elasticsearch/jvm.options
+      regexp: "^-Xms"
+      line: "-Xms512m"
+      state: present
+
+  - name: Change Elasticsearch's memory usage (Xmx) to 512MB
+    lineinfile:
+      dest: /etc/elasticsearch/jvm.options
+      regexp: "^-Xmx"
+      line: "-Xmx512m"
+      state: present
+
+  - name: Do not swap
+    lineinfile:
+      dest: /etc/elasticsearch/elasticsearch.yml
+      regexp: "bootstrap.memory_lock"
+      line: "bootstrap.memory_lock: true"
+      state: present
+
+  - name: We only have a single node, set minimum master nodes accordingly
+    lineinfile:
+      dest: /etc/elasticsearch/elasticsearch.yml
+      regexp: "discovery.zen.minimum_master_nodes"
+      line: "discovery.zen.minimum_master_nodes: 1"
+      state: present
+
+  - name: Do not require explicit names when deleting indices
+    lineinfile:
+      dest: /etc/elasticsearch/elasticsearch.yml
+      regexp: "action.destructive_requires_name"
+      line: "action.destructive_requires_name: false"
+      state: present
+
+  - name: Configure system settings, file descriptors and number of threads
+    pam_limits:
+      domain: '*'
+      limit_type: "{{item.limit_type}}"
+      limit_item: "{{item.limit_item}}"
+      value: "{{item.value}}"
+    with_items:
+      - { limit_type: '-', limit_item: 'nofile', value: 65536 }
+      - { limit_type: '-', limit_item: 'nproc', value: 65536 }
+      - { limit_type: 'soft', limit_item: 'memlock', value: unlimited }
+      - { limit_type: 'hard', limit_item: 'memlock', value: unlimited }
+
+  - name: Reload settings from all system configuration files
+    shell: sysctl --system
+
+  - name: Start Elasticsearch
+    systemd:
+      name: elasticsearch
+      enabled: yes
+      state: restarted
+
+  - name: Wait for Elasticsearch to become available
+    wait_for:
+      port: 9200
+      delay: 5
+
+  - name: Set the number of shards to one and the number of replicas to 0
+    uri:
+      url: http://localhost:9200/_template/template_global
+      body_format: json
+      method: PUT
+      body:
+        template: "*"
+        order: 0
+        settings:
+          number_of_shards: 1
+          number_of_replicas: 0
+      status_code:
+        - 200
+        - 201

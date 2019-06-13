@@ -1,0 +1,23 @@
+---
+- hosts: elk
+  become: true
+  vars_files:
+  - vars.yml
+
+  tasks:
+  - name: Install docker engine
+    package:
+      name: docker-engine
+      state: present
+
+  - name: Make sure Docker autostarts
+    systemd:
+      name: docker
+      enabled: yes
+      state: started
+
+  - name: Adding existing vagrant user to docker group
+    user:
+      name: vagrant
+      groups: docker
+      append: yes
